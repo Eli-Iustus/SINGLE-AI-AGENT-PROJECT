@@ -1,21 +1,28 @@
 import os
-import streamlit as st
 import requests
+import streamlit as st
 
 from dotenv import load_dotenv
 
 from langchain_groq import ChatGroq
 from langchain_tavily import TavilySearch
-from langchain.tools import tool
+from langchain_core.tools import tool
 from langchain.agents import create_agent
 
 
 # ============================================================
-# PAGE CONFIGURATION
+# ENVIRONMENT
+# ============================================================
+
+load_dotenv()
+
+
+# ============================================================
+# STREAMLIT PAGE CONFIG
 # ============================================================
 
 st.set_page_config(
-    page_title="Agentic AI Assistant",
+    page_title="AG Assistant",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -23,369 +30,488 @@ st.set_page_config(
 
 
 # ============================================================
-# LOAD ENVIRONMENT VARIABLES
-# ============================================================
-
-load_dotenv()
-
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
-WEATHERSTACK_API_KEY = os.getenv("WEATHERSTACK_API_KEY")
-
-
-# ============================================================
-# CUSTOM CSS
+# CUSTOM PROFESSIONAL UI
 # ============================================================
 
 st.markdown(
-    """
-    <style>
-
-    /* -------------------------------------------------------
-       GLOBAL
-    ------------------------------------------------------- */
+"""
+<style>
+
+/* ==========================================================
+   ROOT
+========================================================== */
+
+:root {
+    --bg-main: #070b14;
+    --bg-secondary: #0b1120;
+    --card: rgba(15, 23, 42, 0.72);
+    --card-hover: rgba(20, 30, 52, 0.92);
+
+    --border: rgba(148, 163, 184, 0.14);
+    --border-active: rgba(99, 102, 241, 0.50);
+
+    --text-main: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
 
-    .stApp {
-        background:
-            radial-gradient(
-                circle at top left,
-                rgba(79, 70, 229, 0.12),
-                transparent 30%
-            ),
-            radial-gradient(
-                circle at top right,
-                rgba(6, 182, 212, 0.10),
-                transparent 28%
-            ),
-            #070b14;
-        color: #f8fafc;
-    }
+    --purple: #818cf8;
+    --blue: #38bdf8;
+    --cyan: #22d3ee;
+    --green: #4ade80;
+    --red: #fb7185;
+}
+
+
+/* ==========================================================
+   MAIN APP
+========================================================== */
 
-    html,
-    body,
-    [class*="css"] {
-        font-family:
-            Inter,
-            -apple-system,
-            BlinkMacSystemFont,
-            "Segoe UI",
-            sans-serif;
-    }
+html,
+body,
+[data-testid="stAppViewContainer"] {
+    background:
+        radial-gradient(
+            circle at 10% 0%,
+            rgba(99, 102, 241, 0.12),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 90% 10%,
+            rgba(14, 165, 233, 0.10),
+            transparent 30%
+        ),
+        #070b14;
+}
 
+[data-testid="stAppViewContainer"] {
+    color: var(--text-main);
+}
 
-    /* -------------------------------------------------------
-       MAIN CONTAINER
-    ------------------------------------------------------- */
 
-    .block-container {
-        max-width: 1200px;
-        padding-top: 2rem;
-        padding-bottom: 3rem;
-    }
+/* ==========================================================
+   MAIN CONTENT WIDTH
+========================================================== */
 
+.block-container {
+    max-width: 1150px;
+    padding-top: 2rem;
+    padding-bottom: 7rem;
+}
 
-    /* -------------------------------------------------------
-       SIDEBAR
-    ------------------------------------------------------- */
 
-    section[data-testid="stSidebar"] {
-        background:
-            linear-gradient(
-                180deg,
-                #0b1020 0%,
-                #090d18 100%
-            );
+/* ==========================================================
+   SIDEBAR
+========================================================== */
 
-        border-right: 1px solid rgba(255,255,255,0.08);
-    }
+[data-testid="stSidebar"] {
+    background:
+        linear-gradient(
+            180deg,
+            #0b1020 0%,
+            #080c16 100%
+        );
 
-    section[data-testid="stSidebar"] > div {
-        padding-top: 1.5rem;
-    }
+    border-right: 1px solid var(--border);
+}
 
+[data-testid="stSidebarContent"] {
+    padding-top: 1rem;
+}
 
-    /* -------------------------------------------------------
-       HEADINGS
-    ------------------------------------------------------- */
 
-    h1, h2, h3 {
-        color: #f8fafc;
-    }
+/* ==========================================================
+   TYPOGRAPHY
+========================================================== */
 
+h1,
+h2,
+h3,
+h4 {
+    color: #f8fafc !important;
+}
 
-    /* -------------------------------------------------------
-       HERO CARD
-    ------------------------------------------------------- */
+p {
+    color: #cbd5e1;
+}
 
-    .hero-card {
 
-        padding: 30px;
+/* ==========================================================
+   HERO
+========================================================== */
 
-        border-radius: 24px;
+.hero {
+    position: relative;
 
-        background:
-            linear-gradient(
-                135deg,
-                rgba(79,70,229,0.18),
-                rgba(6,182,212,0.09)
-            );
+    overflow: hidden;
 
-        border: 1px solid rgba(255,255,255,0.10);
+    padding: 35px 38px;
 
-        box-shadow:
-            0 20px 60px rgba(0,0,0,0.25);
+    margin-bottom: 24px;
 
-        margin-bottom: 25px;
-    }
+    border-radius: 24px;
 
-    .hero-badge {
+    border: 1px solid rgba(129, 140, 248, 0.22);
 
-        display: inline-block;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(79, 70, 229, 0.15),
+            rgba(14, 165, 233, 0.08)
+        );
 
-        padding: 7px 13px;
+    box-shadow:
+        0 30px 80px rgba(0, 0, 0, 0.28);
+}
 
-        border-radius: 100px;
 
-        font-size: 12px;
+.hero::after {
+    content: "";
 
-        font-weight: 700;
+    position: absolute;
 
-        letter-spacing: 0.04em;
+    width: 240px;
+    height: 240px;
 
-        background: rgba(99,102,241,0.15);
+    right: -90px;
+    top: -100px;
 
-        color: #a5b4fc;
+    border-radius: 50%;
 
-        border: 1px solid rgba(129,140,248,0.25);
+    background: rgba(56, 189, 248, 0.12);
 
-        margin-bottom: 15px;
-    }
+    filter: blur(30px);
+}
 
-    .hero-title {
 
-        font-size: 39px;
+.hero-badge {
+    display: inline-flex;
 
-        font-weight: 800;
+    padding: 7px 13px;
 
-        line-height: 1.15;
+    border-radius: 50px;
 
-        margin-bottom: 10px;
+    background: rgba(99, 102, 241, 0.13);
 
-        background:
-            linear-gradient(
-                90deg,
-                #ffffff,
-                #c7d2fe,
-                #67e8f9
-            );
+    border: 1px solid rgba(129, 140, 248, 0.25);
 
-        -webkit-background-clip: text;
+    color: #a5b4fc;
 
-        -webkit-text-fill-color: transparent;
-    }
+    font-size: 12px;
 
-    .hero-subtitle {
+    font-weight: 700;
 
-        color: #94a3b8;
+    letter-spacing: 0.08em;
 
-        font-size: 16px;
+    margin-bottom: 16px;
+}
 
-        max-width: 760px;
 
-        line-height: 1.65;
-    }
+.hero-title {
+    font-size: 42px;
 
+    line-height: 1.15;
 
-    /* -------------------------------------------------------
-       STATUS CARDS
-    ------------------------------------------------------- */
+    font-weight: 800;
 
-    .status-card {
+    letter-spacing: -0.025em;
 
-        padding: 15px 18px;
+    margin-bottom: 12px;
 
-        border-radius: 16px;
+    background:
+        linear-gradient(
+            90deg,
+            #ffffff 0%,
+            #c7d2fe 45%,
+            #67e8f9 100%
+        );
 
-        background: rgba(255,255,255,0.035);
+    -webkit-background-clip: text;
 
-        border: 1px solid rgba(255,255,255,0.07);
+    -webkit-text-fill-color: transparent;
+}
 
-        margin-bottom: 10px;
-    }
 
-    .status-title {
+.hero-description {
+    max-width: 760px;
 
-        font-size: 12px;
+    font-size: 16px;
 
-        color: #64748b;
+    line-height: 1.7;
 
-        text-transform: uppercase;
+    color: #94a3b8;
+}
 
-        letter-spacing: 0.08em;
 
-        margin-bottom: 5px;
-    }
+/* ==========================================================
+   SIDEBAR LOGO
+========================================================== */
 
-    .status-value {
+.sidebar-title {
+    font-size: 22px;
 
-        font-size: 14px;
+    font-weight: 800;
 
-        font-weight: 600;
+    color: white;
 
-        color: #f8fafc;
-    }
+    margin-bottom: 2px;
+}
 
-    .online {
 
-        color: #4ade80;
+.sidebar-subtitle {
+    font-size: 12px;
 
-        font-weight: 600;
-    }
+    color: #64748b;
 
-    .offline {
+    margin-bottom: 20px;
+}
 
-        color: #f87171;
 
-        font-weight: 600;
-    }
+/* ==========================================================
+   STATUS CARDS
+========================================================== */
 
+.status-card {
+    padding: 14px 15px;
 
-    /* -------------------------------------------------------
-       TOOL CHIP
-    ------------------------------------------------------- */
+    border: 1px solid var(--border);
 
-    .tool-chip {
+    border-radius: 14px;
 
-        display: inline-block;
+    background: rgba(255, 255, 255, 0.025);
 
-        padding: 6px 11px;
+    margin-bottom: 9px;
+}
 
-        border-radius: 100px;
 
-        margin-right: 6px;
+.status-label {
+    color: #64748b;
 
-        margin-bottom: 6px;
+    font-size: 11px;
 
-        background: rgba(14,165,233,0.08);
+    font-weight: 700;
 
-        border: 1px solid rgba(14,165,233,0.18);
+    letter-spacing: 0.08em;
 
-        color: #7dd3fc;
+    text-transform: uppercase;
 
-        font-size: 12px;
+    margin-bottom: 5px;
+}
 
-        font-weight: 600;
-    }
 
+.status-value {
+    color: #e2e8f0;
 
-    /* -------------------------------------------------------
-       STREAMLIT CHAT
-    ------------------------------------------------------- */
+    font-size: 13px;
 
-    [data-testid="stChatMessage"] {
+    font-weight: 600;
+}
 
-        background: rgba(255,255,255,0.025);
 
-        border: 1px solid rgba(255,255,255,0.065);
+.status-online {
+    color: #4ade80;
+}
 
-        border-radius: 18px;
 
-        padding: 8px;
+.status-offline {
+    color: #fb7185;
+}
 
-        margin-bottom: 12px;
-    }
 
+/* ==========================================================
+   SECTION LABEL
+========================================================== */
 
-    /* -------------------------------------------------------
-       CHAT INPUT
-    ------------------------------------------------------- */
+.section-label {
+    font-size: 14px;
 
-    [data-testid="stChatInput"] textarea {
+    font-weight: 700;
 
-        border-radius: 16px !important;
+    margin-bottom: 8px;
 
-        border: 1px solid rgba(129,140,248,0.3) !important;
+    color: #e2e8f0;
+}
 
-        background: #0e1424 !important;
 
-        color: white !important;
-    }
+/* ==========================================================
+   STREAMLIT BUTTONS
+========================================================== */
 
+.stButton > button {
+    width: 100%;
 
-    /* -------------------------------------------------------
-       BUTTONS
-    ------------------------------------------------------- */
+    border-radius: 13px;
 
-    .stButton > button {
+    border: 1px solid rgba(148, 163, 184, 0.15);
 
-        border-radius: 12px;
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.045),
+            rgba(255, 255, 255, 0.025)
+        );
 
-        border: 1px solid rgba(255,255,255,0.09);
+    color: #e2e8f0;
 
-        background: rgba(255,255,255,0.035);
+    padding: 0.62rem 0.8rem;
 
-        color: #e2e8f0;
+    font-weight: 600;
 
-        font-weight: 500;
+    transition:
+        all 0.20s ease;
+}
 
-        transition: 0.2s ease;
-    }
 
-    .stButton > button:hover {
+.stButton > button:hover {
+    border-color: rgba(99, 102, 241, 0.60);
 
-        border-color: rgba(129,140,248,0.55);
+    background:
+        linear-gradient(
+            180deg,
+            rgba(99, 102, 241, 0.16),
+            rgba(56, 189, 248, 0.06)
+        );
 
-        background: rgba(99,102,241,0.12);
+    color: white;
 
-        color: white;
-    }
+    transform: translateY(-1px);
+}
 
 
-    /* -------------------------------------------------------
-       DIVIDER
-    ------------------------------------------------------- */
+/* ==========================================================
+   CHAT
+========================================================== */
 
-    hr {
-        border-color: rgba(255,255,255,0.08);
-    }
+[data-testid="stChatMessage"] {
+    background: rgba(15, 23, 42, 0.48);
 
+    border: 1px solid rgba(148, 163, 184, 0.11);
 
-    /* -------------------------------------------------------
-       FOOTER
-    ------------------------------------------------------- */
+    border-radius: 18px;
 
-    .footer {
+    padding: 8px 12px;
 
-        text-align: center;
+    margin-bottom: 12px;
 
-        color: #475569;
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.10);
+}
 
-        font-size: 12px;
 
-        padding-top: 30px;
-    }
+/* ==========================================================
+   CHAT INPUT
+========================================================== */
 
+[data-testid="stChatInput"] {
+    border-radius: 18px !important;
+}
 
-    /* -------------------------------------------------------
-       HIDE STREAMLIT DECORATION
-    ------------------------------------------------------- */
 
-    #MainMenu {
-        visibility: hidden;
-    }
+[data-testid="stChatInput"] textarea {
+    background: #0d1424 !important;
 
-    footer {
-        visibility: hidden;
-    }
+    border: 1px solid rgba(99, 102, 241, 0.30) !important;
 
-    header {
-        background: transparent !important;
-    }
+    border-radius: 16px !important;
 
-    </style>
-    """,
+    color: #f8fafc !important;
+}
+
+
+[data-testid="stChatInput"] textarea:focus {
+    border-color: rgba(99, 102, 241, 0.80) !important;
+
+    box-shadow:
+        0 0 0 1px rgba(99, 102, 241, 0.35) !important;
+}
+
+
+/* ==========================================================
+   TEXT INPUT
+========================================================== */
+
+[data-testid="stTextInput"] input {
+    background: #0d1424;
+
+    color: white;
+
+    border-radius: 11px;
+
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+
+/* ==========================================================
+   EXPANDERS
+========================================================== */
+
+[data-testid="stExpander"] {
+    border:
+        1px solid rgba(148, 163, 184, 0.12) !important;
+
+    border-radius: 13px !important;
+
+    background:
+        rgba(255, 255, 255, 0.02);
+}
+
+
+/* ==========================================================
+   HORIZONTAL LINE
+========================================================== */
+
+hr {
+    border: 0;
+
+    height: 1px;
+
+    background: rgba(148, 163, 184, 0.12);
+}
+
+
+/* ==========================================================
+   FOOTER
+========================================================== */
+
+.app-footer {
+    text-align: center;
+
+    color: #475569;
+
+    font-size: 12px;
+
+    padding-top: 30px;
+}
+
+
+/* ==========================================================
+   STREAMLIT DEFAULT UI
+========================================================== */
+
+#MainMenu {
+    visibility: hidden;
+}
+
+footer {
+    visibility: hidden;
+}
+
+header {
+    background: transparent !important;
+}
+
+</style>
+""",
     unsafe_allow_html=True,
 )
+
+
+# ============================================================
+# DEFAULT API KEYS
+# ============================================================
+
+ENV_GROQ_KEY = os.getenv("GROQ_API_KEY", "")
+ENV_TAVILY_KEY = os.getenv("TAVILY_API_KEY", "")
+ENV_WEATHER_KEY = os.getenv("WEATHERSTACK_API_KEY", "")
 
 
 # ============================================================
@@ -393,22 +519,17 @@ st.markdown(
 # ============================================================
 
 if "messages" not in st.session_state:
-
     st.session_state.messages = [
         {
             "role": "assistant",
             "content": (
-                "Hello! 👋 I'm your Agentic AI Assistant. "
+                "Hello! 👋 I'm **AG Assistant**.\n\n"
                 "I can answer questions, search the web, "
-                "and check current weather information. "
-                "How can I help you?"
+                "retrieve weather information and use AI tools "
+                "automatically depending on your request."
             ),
         }
     ]
-
-
-if "pending_prompt" not in st.session_state:
-    st.session_state.pending_prompt = None
 
 
 # ============================================================
@@ -418,17 +539,18 @@ if "pending_prompt" not in st.session_state:
 @tool
 def get_weather(city: str) -> str:
     """
-    Fetch current weather information for a city
-    using the Weatherstack API.
+    Get current weather information for a city.
     """
 
-    api_key = os.getenv("WEATHERSTACK_API_KEY")
+    api_key = os.getenv(
+        "WEATHERSTACK_API_KEY",
+        "",
+    )
 
     if not api_key:
-
         return (
-            "Weather information is currently unavailable "
-            "because WEATHERSTACK_API_KEY is not configured."
+            "Weatherstack API key is not configured. "
+            "Please add WEATHERSTACK_API_KEY."
         )
 
     url = "http://api.weatherstack.com/current"
@@ -436,93 +558,121 @@ def get_weather(city: str) -> str:
     params = {
         "access_key": api_key,
         "query": city,
+        "units": "m",
     }
 
     try:
-
         response = requests.get(
             url,
             params=params,
-            timeout=10,
+            timeout=15,
         )
 
         response.raise_for_status()
 
         data = response.json()
 
-        if "current" not in data:
-
-            error_info = data.get(
-                "error",
-                "Unknown Weatherstack API error",
-            )
+        if "error" in data:
+            error = data["error"]
 
             return (
-                f"Could not fetch weather information "
-                f"for {city}. Error: {error_info}"
+                "Weatherstack returned an error: "
+                f"{error.get('info', error)}"
             )
 
-        current = data["current"]
+        location = data.get(
+            "location",
+            {},
+        )
 
-        location = data.get("location", {})
+        current = data.get(
+            "current",
+            {},
+        )
 
         descriptions = current.get(
             "weather_descriptions",
-            ["Unknown"],
+            [],
+        )
+
+        description = (
+            descriptions[0]
+            if descriptions
+            else "Unknown"
         )
 
         return (
-            f"Location: {location.get('name', city)}\n"
-            f"Country: {location.get('country', 'Unknown')}\n"
-            f"Temperature: {current.get('temperature', 'N/A')}°C\n"
-            f"Feels Like: {current.get('feelslike', 'N/A')}°C\n"
-            f"Weather: {descriptions[0]}\n"
-            f"Humidity: {current.get('humidity', 'N/A')}%\n"
-            f"Wind Speed: {current.get('wind_speed', 'N/A')} km/h"
+            f"Current weather for "
+            f"{location.get('name', city)}, "
+            f"{location.get('country', '')}:\n\n"
+            f"- Condition: {description}\n"
+            f"- Temperature: "
+            f"{current.get('temperature', 'N/A')}°C\n"
+            f"- Feels like: "
+            f"{current.get('feelslike', 'N/A')}°C\n"
+            f"- Humidity: "
+            f"{current.get('humidity', 'N/A')}%\n"
+            f"- Wind speed: "
+            f"{current.get('wind_speed', 'N/A')} km/h\n"
+            f"- Pressure: "
+            f"{current.get('pressure', 'N/A')} mb\n"
+            f"- UV index: "
+            f"{current.get('uv_index', 'N/A')}"
         )
 
     except requests.exceptions.Timeout:
-
         return (
-            "The weather service took too long to respond. "
+            "The weather service timed out. "
             "Please try again."
         )
 
-    except requests.exceptions.RequestException as error:
-
+    except requests.exceptions.RequestException as exc:
         return (
-            f"Weather service connection error: {error}"
+            "Could not connect to Weatherstack. "
+            f"Error: {exc}"
         )
 
-    except Exception as error:
-
+    except Exception as exc:
         return (
-            f"Unexpected error while getting weather: {error}"
+            "Unexpected weather error: "
+            f"{exc}"
         )
 
 
 # ============================================================
-# CREATE AI AGENT
+# BUILD AGENT
 # ============================================================
 
 @st.cache_resource(show_spinner=False)
-def create_ai_agent(
-    groq_key,
-    tavily_key,
-    weather_key,
+def build_agent(
+    groq_api_key: str,
+    tavily_api_key: str,
+    weather_api_key: str,
 ):
 
-    if not groq_key:
-
+    if not groq_api_key:
         return None, []
 
     # --------------------------------------------------------
-    # Groq LLM
+    # Environment variables used by tools
+    # --------------------------------------------------------
+
+    os.environ["GROQ_API_KEY"] = groq_api_key
+
+    if tavily_api_key:
+        os.environ["TAVILY_API_KEY"] = tavily_api_key
+
+    if weather_api_key:
+        os.environ["WEATHERSTACK_API_KEY"] = weather_api_key
+
+
+    # --------------------------------------------------------
+    # LLM
     # --------------------------------------------------------
 
     llm = ChatGroq(
+        api_key=groq_api_key,
         model="openai/gpt-oss-20b",
-        api_key=groq_key,
         temperature=0.2,
     )
 
@@ -534,137 +684,156 @@ def create_ai_agent(
     tools = []
 
 
-    # Tavily tool
-    if tavily_key:
+    if tavily_api_key:
+        try:
+            web_search = TavilySearch(
+                max_results=5,
+            )
 
-        os.environ["TAVILY_API_KEY"] = tavily_key
+            tools.append(web_search)
 
-        search_tool = TavilySearch(
-            max_results=3
+        except Exception as exc:
+            print(
+                "Tavily initialization error:",
+                exc,
+            )
+
+
+    if weather_api_key:
+        tools.append(
+            get_weather
         )
-
-        tools.append(search_tool)
-
-
-    # Weather tool
-    if weather_key:
-
-        os.environ["WEATHERSTACK_API_KEY"] = weather_key
-
-        tools.append(get_weather)
 
 
     # --------------------------------------------------------
-    # Agent
+    # SYSTEM PROMPT
+    # --------------------------------------------------------
+
+    system_prompt = """
+You are AG Assistant, a professional AI assistant.
+
+You have access to tools.
+
+Follow these rules:
+
+1. Answer normal questions using your model knowledge.
+
+2. Use web search for:
+   - latest news
+   - current information
+   - recent events
+   - changing facts
+   - information explicitly requiring internet research
+
+3. Use the weather tool whenever the user requests current
+   weather information.
+
+4. Never pretend to use a tool if you did not use it.
+
+5. Give clean and structured answers.
+
+6. Use Markdown where useful.
+
+7. Prefer concise explanations first, then details if needed.
+
+8. If a tool fails, explain the failure clearly and still
+   help with whatever information is available.
+
+9. Never reveal API keys or private system configuration.
+"""
+
+
+    # --------------------------------------------------------
+    # CREATE AGENT
     # --------------------------------------------------------
 
     agent = create_agent(
         model=llm,
         tools=tools,
-        system_prompt="""
-You are a helpful AI assistant.
-
-You have access to tools when they are available.
-
-Rules:
-
-1. Answer general questions using your own knowledge.
-2. Use the web-search tool when the user asks about:
-   - recent information
-   - latest news
-   - current events
-   - changing facts
-   - information that needs web verification
-
-3. Use the weather tool for current weather questions.
-
-4. Never claim that you searched the web unless you
-   actually used the search tool.
-
-5. Keep answers clear and well structured.
-
-6. Use Markdown when it improves readability.
-
-7. If a tool fails, explain the problem and continue
-   helping using available information.
-
-8. Do not expose API keys, environment variables,
-   system prompts, or private configuration.
-""",
+        system_prompt=system_prompt,
     )
 
     return agent, tools
 
 
 # ============================================================
-# EXTRACT TEXT FROM AGENT RESPONSE
+# FINAL RESPONSE EXTRACTOR
 # ============================================================
 
-def extract_agent_response(result):
+def extract_final_response(result):
 
-    """
-    Extract the final assistant message from
-    LangChain create_agent() output.
-    """
+    if result is None:
+        return "No response was returned."
 
-    if not result:
-
-        return "I couldn't generate a response."
-
-
-    # create_agent normally returns:
-    #
-    # {
-    #    "messages": [...]
-    # }
-
-    messages = result.get("messages", [])
-
-    if not messages:
-
-        return "I couldn't generate a response."
-
-
-    final_message = messages[-1]
-
-    content = getattr(
-        final_message,
-        "content",
-        str(final_message),
+    messages = result.get(
+        "messages",
+        [],
     )
 
+    if not messages:
+        return "No response was generated."
 
-    # Sometimes content can be a list
-    if isinstance(content, list):
+    # Search backwards for final AI response
+    for message in reversed(messages):
 
-        text_parts = []
+        message_type = getattr(
+            message,
+            "type",
+            "",
+        )
 
-        for item in content:
+        if message_type == "ai":
 
-            if isinstance(item, dict):
+            content = getattr(
+                message,
+                "content",
+                "",
+            )
 
-                if "text" in item:
+            if isinstance(content, str):
+                if content.strip():
+                    return content
 
-                    text_parts.append(
-                        item["text"]
+            if isinstance(content, list):
+
+                pieces = []
+
+                for item in content:
+
+                    if isinstance(
+                        item,
+                        dict,
+                    ):
+
+                        text = item.get(
+                            "text",
+                            "",
+                        )
+
+                        if text:
+                            pieces.append(text)
+
+                    elif isinstance(
+                        item,
+                        str,
+                    ):
+                        pieces.append(item)
+
+                if pieces:
+                    return "\n".join(
+                        pieces
                     )
 
-                elif item.get("type") == "text":
+    # fallback
+    last = messages[-1]
 
-                    text_parts.append(
-                        item.get("text", "")
-                    )
-
-            else:
-
-                text_parts.append(
-                    str(item)
-                )
-
-        return "\n".join(text_parts)
-
-
-    return str(content)
+    return str(
+        getattr(
+            last,
+            "content",
+            last,
+        )
+    )
 
 
 # ============================================================
@@ -674,188 +843,144 @@ def extract_agent_response(result):
 with st.sidebar:
 
     st.markdown(
-        """
-        <h2 style="
-            margin-bottom:0;
-            font-size:24px;
-        ">
-            🤖 AG Assistant
-        </h2>
-
-        <p style="
-            color:#64748b;
-            margin-top:5px;
-            font-size:13px;
-        ">
-            Agentic AI Workspace
-        </p>
-        """,
+        '<div class="sidebar-title">◉ AG Assistant</div>',
         unsafe_allow_html=True,
     )
-
-    st.markdown("---")
-
-
-    # --------------------------------------------------------
-    # MODEL STATUS
-    # --------------------------------------------------------
-
-    st.markdown("### ⚙️ System")
 
     st.markdown(
-        """
-        <div class="status-card">
-
-            <div class="status-title">
-                AI Model
-            </div>
-
-            <div class="status-value">
-                openai/gpt-oss-20b
-            </div>
-
-        </div>
-        """,
+        '<div class="sidebar-subtitle">'
+        'Agentic AI Workspace'
+        '</div>',
         unsafe_allow_html=True,
     )
 
 
-    # GROQ STATUS
+    st.divider()
 
-    if GROQ_API_KEY:
 
-        groq_status = (
-            '<span class="online">● Connected</span>'
-        )
-
-    else:
-
-        groq_status = (
-            '<span class="offline">● Missing key</span>'
-        )
+    # ========================================================
+    # API CONFIG
+    # ========================================================
 
     st.markdown(
-        f"""
-        <div class="status-card">
-
-            <div class="status-title">
-                Groq
-            </div>
-
-            <div class="status-value">
-                {groq_status}
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True,
+        "### 🔐 API Configuration"
     )
 
 
-    # TAVILY STATUS
+    with st.expander(
+        "API Keys",
+        expanded=False,
+    ):
 
-    if TAVILY_API_KEY:
-
-        tavily_status = (
-            '<span class="online">● Available</span>'
+        groq_key = st.text_input(
+            "Groq API Key",
+            value=ENV_GROQ_KEY,
+            type="password",
+            help=(
+                "Used for the main AI model."
+            ),
         )
 
-    else:
-
-        tavily_status = (
-            '<span class="offline">● Disabled</span>'
+        tavily_key = st.text_input(
+            "Tavily API Key",
+            value=ENV_TAVILY_KEY,
+            type="password",
+            help=(
+                "Used for live internet search."
+            ),
         )
+
+        weather_key = st.text_input(
+            "Weatherstack API Key",
+            value=ENV_WEATHER_KEY,
+            type="password",
+            help=(
+                "Used for current weather information."
+            ),
+        )
+
+
+    # ========================================================
+    # STATUS
+    # ========================================================
 
     st.markdown(
-        f"""
-        <div class="status-card">
+        "### ⚙️ System Status"
+    )
 
-            <div class="status-title">
-                Web Search
-            </div>
 
-            <div class="status-value">
-                {tavily_status}
-            </div>
-
-        </div>
-        """,
+    # MODEL
+    st.markdown(
+        '<div class="status-card">'
+        '<div class="status-label">AI Model</div>'
+        '<div class="status-value">'
+        'openai/gpt-oss-20b'
+        '</div>'
+        '</div>',
         unsafe_allow_html=True,
     )
 
 
-    # WEATHER STATUS
-
-    if WEATHERSTACK_API_KEY:
-
-        weather_status = (
-            '<span class="online">● Available</span>'
-        )
-
-    else:
-
-        weather_status = (
-            '<span class="offline">● Disabled</span>'
-        )
+    # GROQ
+    groq_state = (
+        '<span class="status-online">● Connected</span>'
+        if groq_key
+        else
+        '<span class="status-offline">● Missing API key</span>'
+    )
 
     st.markdown(
-        f"""
-        <div class="status-card">
-
-            <div class="status-title">
-                Weather
-            </div>
-
-            <div class="status-value">
-                {weather_status}
-            </div>
-
-        </div>
-        """,
+        '<div class="status-card">'
+        '<div class="status-label">Groq</div>'
+        f'<div class="status-value">{groq_state}</div>'
+        '</div>',
         unsafe_allow_html=True,
     )
 
 
-    st.markdown("---")
-
-
-    # --------------------------------------------------------
-    # AVAILABLE TOOLS
-    # --------------------------------------------------------
-
-    st.markdown("### 🧰 Capabilities")
+    # TAVILY
+    tavily_state = (
+        '<span class="status-online">● Enabled</span>'
+        if tavily_key
+        else
+        '<span class="status-offline">● Disabled</span>'
+    )
 
     st.markdown(
-        """
-        <span class="tool-chip">
-            💬 AI Chat
-        </span>
-
-        <span class="tool-chip">
-            🌐 Web Search
-        </span>
-
-        <span class="tool-chip">
-            🌤 Weather
-        </span>
-
-        <span class="tool-chip">
-            🧠 Agent
-        </span>
-        """,
+        '<div class="status-card">'
+        '<div class="status-label">Web Search</div>'
+        f'<div class="status-value">{tavily_state}</div>'
+        '</div>',
         unsafe_allow_html=True,
     )
 
 
-    st.markdown("---")
+    # WEATHER
+    weather_state = (
+        '<span class="status-online">● Enabled</span>'
+        if weather_key
+        else
+        '<span class="status-offline">● Disabled</span>'
+    )
+
+    st.markdown(
+        '<div class="status-card">'
+        '<div class="status-label">Weather</div>'
+        f'<div class="status-value">{weather_state}</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
 
-    # --------------------------------------------------------
+    st.divider()
+
+
+    # ========================================================
     # CLEAR CHAT
-    # --------------------------------------------------------
+    # ========================================================
 
     if st.button(
-        "🗑️ Clear conversation",
+        "🗑 Clear conversation",
         use_container_width=True,
     ):
 
@@ -864,7 +989,7 @@ with st.sidebar:
                 "role": "assistant",
                 "content": (
                     "Conversation cleared. "
-                    "What would you like to explore?"
+                    "What would you like to ask?"
                 ),
             }
         ]
@@ -873,36 +998,25 @@ with st.sidebar:
 
 
     st.caption(
-        "API keys are loaded securely from your .env file."
+        "Groq powers the model. "
+        "Tavily and Weatherstack are optional tools."
     )
 
 
 # ============================================================
-# MAIN HEADER
+# HERO
 # ============================================================
 
 st.markdown(
-    """
-    <div class="hero-card">
-
-        <div class="hero-badge">
-            ✦ AGENTIC AI
-        </div>
-
-        <div class="hero-title">
-            Your Intelligent AI Assistant
-        </div>
-
-        <div class="hero-subtitle">
-
-            Ask questions, search live information on the web,
-            check current weather conditions, or explore complex
-            topics using a tool-enabled AI agent.
-
-        </div>
-
-    </div>
-    """,
+    '<div class="hero">'
+    '<div class="hero-badge">✦ AGENTIC AI ASSISTANT</div>'
+    '<div class="hero-title">Intelligence that can use tools.</div>'
+    '<div class="hero-description">'
+    'Chat with an AI assistant that can reason about your '
+    'questions, search the live web when required and retrieve '
+    'current weather information through connected tools.'
+    '</div>'
+    '</div>',
     unsafe_allow_html=True,
 )
 
@@ -911,123 +1025,115 @@ st.markdown(
 # QUICK ACTIONS
 # ============================================================
 
-st.markdown("#### ⚡ Quick actions")
+st.markdown(
+    "### ⚡ Quick Actions"
+)
+
+
+quick_prompt = None
 
 
 col1, col2, col3, col4 = st.columns(4)
 
 
 with col1:
-
     if st.button(
-        "🌐 Latest AI news",
+        "🌐 Latest AI News",
         use_container_width=True,
     ):
-
-        st.session_state.pending_prompt = (
-            "Search the web and tell me the latest "
-            "important developments in artificial intelligence."
+        quick_prompt = (
+            "Search the web and give me the latest "
+            "important AI news and developments."
         )
 
 
 with col2:
-
     if st.button(
-        "🌤 Check weather",
+        "🌦 Check Weather",
         use_container_width=True,
     ):
-
-        st.session_state.pending_prompt = (
+        quick_prompt = (
             "What is the current weather in Ongole, "
             "Andhra Pradesh?"
         )
 
 
 with col3:
-
     if st.button(
-        "💻 Learn AI",
+        "🎓 Learn AI",
         use_container_width=True,
     ):
-
-        st.session_state.pending_prompt = (
+        quick_prompt = (
             "Explain AI agents in simple terms with "
-            "a practical example."
+            "a practical real-world example."
         )
 
 
 with col4:
-
     if st.button(
-        "🧠 Explain algorithm",
+        "🧠 Explain Algorithm",
         use_container_width=True,
     ):
-
-        st.session_state.pending_prompt = (
-            "What type of algorithms are used in "
-            "self-playing chess systems?"
+        quick_prompt = (
+            "Explain how an AI agent decides which "
+            "tool to use."
         )
 
 
-st.markdown("<br>", unsafe_allow_html=True)
+st.write("")
 
 
 # ============================================================
 # CHECK GROQ KEY
 # ============================================================
 
-if not GROQ_API_KEY:
+if not groq_key:
 
-    st.error(
-        """
-        GROQ_API_KEY is missing.
-
-        Create a `.env` file in the project folder and add:
-
-        `GROQ_API_KEY=your_key_here`
-        """
+    st.warning(
+        "⚠️ Add your Groq API key in the sidebar "
+        "or inside your `.env` file to start chatting."
     )
 
     st.stop()
 
 
 # ============================================================
-# INITIALIZE AGENT
+# BUILD AGENT
 # ============================================================
 
 try:
 
-    agent, available_tools = create_ai_agent(
-        GROQ_API_KEY,
-        TAVILY_API_KEY,
-        WEATHERSTACK_API_KEY,
+    agent, enabled_tools = build_agent(
+        groq_key,
+        tavily_key,
+        weather_key,
     )
 
-except Exception as error:
+except Exception as exc:
 
     st.error(
-        f"Failed to initialize AI agent: {error}"
+        "Could not initialize the AI agent."
     )
+
+    st.exception(exc)
 
     st.stop()
 
 
 # ============================================================
-# DISPLAY CHAT HISTORY
+# CHAT HISTORY
 # ============================================================
 
 for message in st.session_state.messages:
 
-    role = message["role"]
-
     avatar = (
-        "🤖"
-        if role == "assistant"
-        else "👤"
+        "👤"
+        if message["role"] == "user"
+        else "🤖"
     )
 
     with st.chat_message(
-        role,
+        message["role"],
         avatar=avatar,
     ):
 
@@ -1037,37 +1143,29 @@ for message in st.session_state.messages:
 
 
 # ============================================================
-# GET USER PROMPT
+# CHAT INPUT
 # ============================================================
 
-typed_prompt = st.chat_input(
-    "Ask anything..."
+user_prompt = st.chat_input(
+    "Ask AG anything..."
 )
 
 
-if st.session_state.pending_prompt:
-
-    prompt = st.session_state.pending_prompt
-
-    st.session_state.pending_prompt = None
-
-elif typed_prompt:
-
-    prompt = typed_prompt
-
-else:
-
-    prompt = None
+prompt = (
+    user_prompt
+    if user_prompt
+    else quick_prompt
+)
 
 
 # ============================================================
-# PROCESS CHAT
+# PROCESS USER REQUEST
 # ============================================================
 
 if prompt:
 
     # --------------------------------------------------------
-    # Display user message
+    # USER MESSAGE
     # --------------------------------------------------------
 
     st.session_state.messages.append(
@@ -1076,6 +1174,7 @@ if prompt:
             "content": prompt,
         }
     )
+
 
     with st.chat_message(
         "user",
@@ -1086,32 +1185,19 @@ if prompt:
 
 
     # --------------------------------------------------------
-    # Prepare history
+    # CONVERT CHAT HISTORY FOR LANGCHAIN
     # --------------------------------------------------------
 
-    #
-    # IMPORTANT:
-    # We exclude the newly added current prompt from history
-    # and append it once below.
-    #
-    # This prevents the same user prompt being sent twice.
-    #
+    langchain_messages = []
 
-    previous_messages = (
-        st.session_state.messages[:-1]
-    )
+    for message in st.session_state.messages:
 
-
-    agent_messages = []
-
-    for message in previous_messages:
-
-        if message["role"] in [
+        if message["role"] in (
             "user",
             "assistant",
-        ]:
+        ):
 
-            agent_messages.append(
+            langchain_messages.append(
                 {
                     "role": message["role"],
                     "content": message["content"],
@@ -1119,16 +1205,8 @@ if prompt:
             )
 
 
-    agent_messages.append(
-        {
-            "role": "user",
-            "content": prompt,
-        }
-    )
-
-
     # --------------------------------------------------------
-    # Run agent
+    # AGENT RESPONSE
     # --------------------------------------------------------
 
     with st.chat_message(
@@ -1136,45 +1214,65 @@ if prompt:
         avatar="🤖",
     ):
 
+        response_area = st.empty()
+
         with st.spinner(
-            "Agent is thinking..."
+            "AG is thinking and selecting tools..."
         ):
 
             try:
 
+                # Ensure latest keys are available
+                os.environ[
+                    "GROQ_API_KEY"
+                ] = groq_key
+
+                if tavily_key:
+                    os.environ[
+                        "TAVILY_API_KEY"
+                    ] = tavily_key
+
+                if weather_key:
+                    os.environ[
+                        "WEATHERSTACK_API_KEY"
+                    ] = weather_key
+
+
                 result = agent.invoke(
                     {
-                        "messages": agent_messages
+                        "messages":
+                        langchain_messages
                     }
                 )
 
-                assistant_response = (
-                    extract_agent_response(result)
+
+                answer = extract_final_response(
+                    result
                 )
 
 
-            except Exception as error:
+            except Exception as exc:
 
-                assistant_response = (
-                    "⚠️ I encountered an error while "
-                    "processing your request.\n\n"
-                    f"**Error:** `{error}`"
+                answer = (
+                    "### ⚠️ Request failed\n\n"
+                    "The AI agent encountered an error.\n\n"
+                    f"`{exc}`"
                 )
 
 
-        st.markdown(
-            assistant_response
+        response_area.markdown(
+            answer
         )
 
 
     # --------------------------------------------------------
-    # Store assistant answer
+    # SAVE RESPONSE
     # --------------------------------------------------------
 
     st.session_state.messages.append(
         {
             "role": "assistant",
-            "content": assistant_response,
+            "content": answer,
         }
     )
 
@@ -1184,12 +1282,8 @@ if prompt:
 # ============================================================
 
 st.markdown(
-    """
-    <div class="footer">
-
-        Powered by Groq · LangChain · Tavily · Weatherstack · Streamlit
-
-    </div>
-    """,
+    '<div class="app-footer">'
+    'AG Assistant • Groq • LangChain • Tavily • Weatherstack • Streamlit'
+    '</div>',
     unsafe_allow_html=True,
 )
